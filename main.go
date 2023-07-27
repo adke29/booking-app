@@ -1,16 +1,22 @@
 package main
 
 import (
+	"booking-app/helper"
 	"fmt"
 	"strings"
+	"sync"
+	"time"
 )
 
+var wg = sync.WaitGroup{}
+
 func main() {
-	var availableTickets int = 50
-	var orderedTicket int
+
+	var availableTickets uint = 50
+	var orderedTicket uint
 	var firstName string
 	var lastName string
-	var bookings []string
+	var bookings []helper.UserModel
 	var email string
 
 	for availableTickets > 0 {
@@ -39,32 +45,37 @@ func main() {
 
 		//Booking process
 		availableTickets -= orderedTicket
-		bookings = append(bookings, (firstName + " " + lastName))
-		firstNames := []string{}
-		for _, booking := range bookings {
-			var name = strings.Fields(booking)
-			firstName = name[0]
-			firstNames = append(firstNames, firstName)
+		var userData = helper.UserModel{
+			FirstName:     firstName,
+			LastName:      lastName,
+			Email:         email,
+			OrderedTicket: orderedTicket,
 		}
 
-		results(bookings[len(bookings)-1], availableTickets, firstNames)
+		bookings = append(bookings, userData)
+		firstNames := []string{}
+		for _, booking := range bookings {
+			firstNames = append(firstNames, booking.FirstName)
+		}
+
+		helper.Results(firstName, availableTickets, firstNames)
+		wg.Add(1)
+		go sendTicket(email, orderedTicket) //create go routine
 		fmt.Println("--------------------------------------------")
 		if availableTickets <= 0 {
 			fmt.Println("Tickets have been sold out")
 		}
+		fmt.Println(bookings)
+		wg.Wait()
 
 	}
 }
 
-func results(customer string, availableTickets int, firstNames []string) {
-	fmt.Printf("Thank you %v for your booking!\n", customer)
-	fmt.Println("Available tickets: ", availableTickets)
-	for index, firstName := range firstNames {
-		fmt.Print(firstName)
-		if index < (len(firstNames) - 1) {
-			fmt.Print(", ")
-		}
-	}
-	fmt.Println(" has ordered")
-
+func sendTicket(email string, orderedTickets uint) {
+	time.Sleep(5 * time.Second)
+	fmt.Println("######################")
+	fmt.Printf("Sending %v tickets to %v\n", orderedTickets, email)
+	fmt.Println("Tickets have been sent")
+	fmt.Println("######################")
+	wg.Done()
 }
